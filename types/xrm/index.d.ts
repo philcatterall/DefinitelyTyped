@@ -678,6 +678,23 @@ declare namespace Xrm {
              * returns a rejected promise for an async event handler or the operation times out.
              */
             preventDefaultOnError(): void;
+
+            /**
+             * Use this method in the onPostSave Event Handler
+             * Checks if the onSave operation was successful or failed.
+             * returns boolean
+             * philc
+             */
+            
+            getIsSaveSuccess(): boolean;
+
+            /**
+             * Use this method in the onPostSave Event Handler
+             * Gets the details of the error that was returned.
+             * returns string
+             * philc
+             */
+            getSaveErrorInfo(): string;
         }
 
         interface SaveEventArgumentsAsync extends SaveEventArguments {
@@ -740,6 +757,12 @@ declare namespace Xrm {
             /**
              * Gets the destination process status
              * @returns The process status
+             * @remarks Note that this method `context.getEventArgs().getStatus()` returns the Status with 1st character Capitalised (Active, Aborted, Finished),
+             * whereas `context.getFormContext().data.process.getStatus()` returns all lowercase (active, aborted, finished).
+             * This is documented and appears to be by design.
+             * @see {@link https://learn.microsoft.com/en-us/power-apps/developer/model-driven-apps/clientapi/reference/executioncontext/geteventargs External Link: ExecutionContext.getEventArgs}
+             * @see {@link https://learn.microsoft.com/en-us/power-apps/developer/model-driven-apps/clientapi/reference/formcontext-data-process/instance/getstatus ExternalLink: formContext.data.process.getStatus}
+             * philc
              */
             getStatus(): ProcessFlow.ProcessStatus;
 
@@ -951,6 +974,18 @@ declare namespace Xrm {
         }
 
         /**
+         * Status for {@link Events.ProcessStatusChangedEventArguments.getStatus ProcessStatusChangedEventArguments.getStatus}.
+         * @see {@link XrmEnum.ProcessStatus}
+         * @remarks Note that `context.getEventArgs().getStatus()` returns the Status with 1st character Capitalised (Active, Aborted, Finished),
+         * whereas `context.getFormContext().data.process.getStatus()` returns all lowercase (active, aborted, finished).
+         * This is documented and appears to be by design.
+         * @see {@link https://learn.microsoft.com/en-us/power-apps/developer/model-driven-apps/clientapi/reference/executioncontext/geteventargs External Link: ExecutionContext.getEventArgs}
+         * @see {@link https://learn.microsoft.com/en-us/power-apps/developer/model-driven-apps/clientapi/reference/formcontext-data-process/instance/getstatus ExternalLink: formContext.data.process.getStatus}
+         * philc
+         */
+        type ProcessStatus = "Active" | "Aborted" | "Finished";
+
+        /**
          * Type for a context-sensitive handler.
          * @param context The context.
          */
@@ -963,8 +998,8 @@ declare namespace Xrm {
 
         type SaveEventHandler = (context: SaveEventContext) => void;
         type SaveEventHandlerAsync = (context: SaveEventContextAsync) => PromiseLike<void>;
-
-        type PostSaveEventHandler = (context: EventContext) => void;
+        // philc
+        type PostSaveEventHandler = (context: SaveEventContext) => void;
 
         type ProcessStatusChangeHandler = (context: ProcessStatusChangedEventContext) => void;
         type StageChangeEventHandler = (context: StageChangeEventContext) => void;
@@ -6664,6 +6699,55 @@ declare namespace XrmEnum {
         Aborted = "aborted",
         Finished = "finished",
     }
+    
+    /**
+     * Use this if comparing the process status with that returned by Xrm.Events.ProcessStatusChangedEventContext.getEventArgs()
+     * philc
+     */
+    const enum ProcessStatusFromEventArgs {
+        Active = "Active",
+        Aborted = "Aborted",
+        Finished = "Finished",
+    }
+    /**
+     * Use this if comparing the process status with that returned by context.getFormContext().data.process.getStatus()
+     */
+    const enum ProcessStatusFromFormContext {
+        Active = "active",
+        Aborted = "aborted",
+        Finished = "finished",
+    }
+
+    /**
+    * Use this namespace to get the correct status value when calling context.getEventArgs().getStatus()
+    */
+
+    /*
+    Note for Reviewers Philc
+    I have implemented like this, to avoid breaking existing code, but would like to bounce it off the main contributors
+    I decided upon a namespace approach, to makeit tidier. Otherwise we would have enums like EventArgsProcessStatus or similar - a bit of a mouthful
+    Ideally (assuming NS approach is felt to be appropriate), I'd have anamespace of "ProcessStatus", then enums of "EventArgsStatus" and "FormContextStatus"
+    But would like others' opinions
+    */
+      namespace EventArgsStatus {
+        const enum ProcessStatus {
+            Active = "Active",
+            Aborted = "Aborted",
+            Finished = "Finished",
+        }
+    }
+
+    /**
+     * Use this namespace to get the correct status value when calling formContext.data.process.getStatus()
+     */
+    namespace FormContextStatus {
+        const enum ProcessStatus {
+            Active = "active",
+            Aborted = "aborted",
+            Finished = "finished",
+        }
+    }
+
 
     /**
      * Constant Enum: Command Bar Display options for Xrm.Url.FormOpenParameters.cmdbar, Xrm.Url.ViewOpenParameters.cmdbar, and Xrm.Utility.FormOpenParameters.cmdbar.
